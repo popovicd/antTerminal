@@ -10,6 +10,7 @@
 #include "terminal.h"
 
 struct termios orig_termios;
+struct terminal_context t_ctx;
 
 void terminal_error(int error) {
 	switch(error) {
@@ -58,11 +59,22 @@ void terminal_enable_raw() {
         terminal_error(TCGETATTR);
 }
 
+void terminal_refresh() {
+	if(write(STDOUT_FILENO, "\x1b[?25l", 6) != 6)
+		terminal_error(WRITE);
+    if(write(STDOUT_FILENO, "\x1b[2J", 4) != 4)
+		terminal_error(WRITE);
+    if(write(STDOUT_FILENO, "\x1b[H", 3) != 3)
+		terminal_error(WRITE);
+    if(write(STDOUT_FILENO, "\x1b[?25h", 6) != 6)
+		terminal_error(WRITE);
+}
+
 void terminal_init(struct terminal_context *terminal) {
     memset(terminal->buffer, 0, LEN_LINE);
-    terminal->str_pos = 0;
+    terminal->line_pos = LEN_PROMPT;
     terminal->str_len = 0;
-    terminal->str_start_pos = LEN_PROMPT;
+    terminal->str_pos = LEN_PROMPT;
 
     terminal_enable_raw();
 }
@@ -101,6 +113,11 @@ void terminal_cursor_move(int pos) {
 
     if(write(STDOUT_FILENO, control_seq, strlen(control_seq)) != strlen(control_seq))
         terminal_error(WRITE);
+}
+
+void terminal_prompt(char *prompt) {
+    if(write(STDOUT_FILENO, prompt, strlen(prompt)) != strlen(prompt))
+		terminal_error(WRITE);
 }
 
 int terminal_key_process() {
@@ -145,25 +162,169 @@ int terminal_getchar() {
     c = terminal_key_process();
 
     switch (c) {
+		/* CTRL + keys to be ignored. If
+		 * implementing, implementation should
+		 * be done here. */
+        case CTRL_KEY('t'):
+        case CTRL_KEY('y'):
+        case CTRL_KEY('u'):
+        case CTRL_KEY('i'):
+        case CTRL_KEY('o'):
+        case CTRL_KEY('p'):
+        case CTRL_KEY('s'):
+        case CTRL_KEY('d'):
+        case CTRL_KEY('f'):
+        case CTRL_KEY('g'):
+        case CTRL_KEY('h'):
+        case CTRL_KEY('j'):
+        case CTRL_KEY('k'):
+        case CTRL_KEY('l'):
+        case CTRL_KEY('z'):
+        case CTRL_KEY('x'):
+        case CTRL_KEY('c'):
+        case CTRL_KEY('v'):
+        case CTRL_KEY('b'):
+        case CTRL_KEY('n'):
+			break;
         case CTRL_KEY('q'):                 /* quit */
+			terminal_refresh();
+			exit(0);
             break;
         case CTRL_KEY('a'):                 /* home */
+			t_ctx.line_pos = LEN_PROMPT;
+			terminal_cursor_move(t_ctx.line_pos);
             break;
         case CTRL_KEY('e'):                 /* end */
+            t_ctx.line_pos = LEN_PROMPT + t_ctx.str_len;
+            terminal_cursor_move(t_ctx.line_pos);
             break;
         case ENTER:
+			t_ctx.buffer[t_ctx.str_len + 1] = '\0';
+			if (t_ctx.str_len > 0) {
+				memset(t_ctx.buffer, '\0', LEN_LINE);
+				t_ctx.line_pos = LEN_PROMPT;
+				t_ctx.str_len = 0;
+			}
+
+			if(write(STDOUT_FILENO, "\r\n", 2) != 2)
+				terminal_error(WRITE);
+			c = '\n';
             break;
         case ARROW_UP:
             break;
         case ARROW_DOWN:
             break;
         case ARROW_LEFT:
+			if(t_ctx.line_pos > LEN_PROMPT) {
+				t_ctx.line_pos--;
+				/* return the current location in buffer */
+				t_ctx.str_pos = t_ctx.line_pos - LEN_PROMPT - 2;
+			}
+
+			if(t_ctx.line_pos < LEN_PROMPT) {
+			    t_ctx.line_pos = LEN_PROMPT;
+			    t_ctx.str_pos = 0;
+			}
+
+			terminal_cursor_move(t_ctx.line_pos);
             break;
         case ARROW_RIGHT:
+		   if(t_ctx.line_pos - strlen(PROMPT) < t_ctx.str_len) {
+                t_ctx.line_pos++;
+                /* return the current location in buffer */
+                t_ctx.str_pos = t_ctx.line_pos - LEN_PROMPT - 2;
+            }
+            else {
+                t_ctx.line_pos = t_ctx.str_len + strlen(PROMPT) + 1;
+                t_ctx.str_pos = t_ctx.str_len - 1;
+            }
+
+            terminal_cursor_move(t_ctx.line_pos);
             break;
         case BACKSPACE:
+			int line_length, curr_pos, i;
+
+			if(t_ctx.line_pos > LEN_PROMPT) {
+			    t_ctx.line_pos--;
+				t_ctx.str_pos = t_ctx.line_pos - LEN_PROMPT - 2;
+			}
+			else {
+				t_ctx.str_pos = 0;
+				break;
+			}
+
+			/* claculate where we at, swap everything from this pont with
+			 * the rest of the string */
+			line_length = t_ctx.str_len + LEN_PROMPT;
+			for (i = t_ctx.line_pos; i < line_length; i++) {
+				curr_pos = line_length - i;
+				t_ctx.buffer[t_ctx.str_len - curr_pos] = t_ctx.buffer[t_ctx.str_len - curr_pos + 1];
+			}
+
+			/* erase the last char if backspace presed on the last */
+			t_ctx.buffer[t_ctx.str_len] = ' ';
+
+			terminal_cursor_move(t_ctx.line_pos);
+			if(write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len], 1) != 1)
+				terminal_error(WRITE);
+			terminal_cursor_move(t_ctx.line_pos);
+
+			t_ctx.str_len--;
+
+			/* move everything one char downfront if cursor is in the middle
+			 * of a t_ctx.buffer string. Afterwards, delete trailing crap
+			 */
+			for (i = t_ctx.line_pos; i < line_length - 1; i++) {
+				curr_pos = line_length - 1 - i;
+				if(write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len - curr_pos], 1) != 1)
+				terminal_error(WRITE);
+			}
+			t_ctx.buffer[t_ctx.str_len] = ' ';
+
+			if(write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len], 1) != 1)
+				terminal_error(WRITE);
+			terminal_cursor_move(t_ctx.line_pos);
+
             break;
 		default: 							/* any other char */
+            /* locks at EOL */
+            if(t_ctx.str_len >= LEN_LINE) {
+                c = EOL;
+                break;
+            }
+
+			/* somewhere in the middle of a t_ctx.buffer string */
+			if(t_ctx.line_pos != LEN_PROMPT + t_ctx.str_len) {
+				int i, line_length, curr_pos;
+
+				line_length = LEN_PROMPT + t_ctx.str_len;
+				for(i = line_length + 1; i > t_ctx.line_pos; i--) {
+				    curr_pos =  line_length + 1 - i;
+				    t_ctx.buffer[t_ctx.str_len - curr_pos + 1] = t_ctx.buffer[t_ctx.str_len - curr_pos];
+				}
+				curr_pos = line_length + 1 - t_ctx.line_pos;
+				t_ctx.buffer[t_ctx.str_len - curr_pos + 1] = c;
+
+				for (i = t_ctx.line_pos; i < line_length + 1; i++) {
+				    curr_pos =  line_length - i;
+				    if(write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len - curr_pos], 1) != 1)
+				        terminal_error(WRITE);
+				}
+
+				t_ctx.line_pos++;
+				t_ctx.str_len++;
+				t_ctx.str_pos =  t_ctx.line_pos - LEN_PROMPT - 2;
+				terminal_cursor_move(t_ctx.line_pos);
+			}
+			else {
+				t_ctx.buffer[t_ctx.str_len] = c;
+				t_ctx.str_pos++;
+				t_ctx.str_len++;
+				t_ctx.line_pos++;
+
+				if(write(STDOUT_FILENO, &c, 1) != 1)
+					terminal_error(WRITE);
+			}
 
             break;
     }
