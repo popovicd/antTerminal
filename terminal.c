@@ -19,6 +19,12 @@ void terminal_error(int error) {
 		case TCGETATTR:
 			perror("Error at getting terminal attributes: ");
 			exit(1);
+		case READ:
+			perror("Terminal read error: ");
+			exit(1);
+		case WRITE:
+			perror("Terminal write error: ");
+			exit(1);
 		deafult:
 			exit(1);
 	}
@@ -30,7 +36,7 @@ void terminal_disable_raw() {
 
 int terminal_enable_raw() {
     if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
-        return -1;
+        terminal_error(TCGETATTR);
 
 	/* Set the new attributes for the terminal */
     struct termios raw_terminal;
@@ -49,9 +55,8 @@ int terminal_enable_raw() {
 	atexit(terminal_disable_raw);
 
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_terminal) == -1)
-        return -1;
+        terminal_error(TCGETATTR);
 
     return 0;
 }
-
 
