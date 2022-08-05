@@ -34,7 +34,7 @@ void terminal_disable_raw() {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
 }
 
-int terminal_enable_raw() {
+void terminal_enable_raw() {
     if (tcgetattr(STDIN_FILENO, &orig_termios) == -1)
         terminal_error(TCGETATTR);
 
@@ -56,8 +56,15 @@ int terminal_enable_raw() {
 
     if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_terminal) == -1)
         terminal_error(TCGETATTR);
+}
 
-    return 0;
+void terminal_init(struct terminal_context *terminal) {
+    memset(terminal->buffer, 0, LEN_LINE);
+    terminal->str_pos = 0;
+    terminal->str_len = 0;
+    terminal->str_start_pos = LEN_PROMPT;
+
+    terminal_enable_raw();
 }
 
 int terminal_get_row() {
@@ -82,7 +89,7 @@ int terminal_get_row() {
     return row;
 }
 
-int terminal_cursor_move(int pos) {
+void terminal_cursor_move(int pos) {
     int row;
     char control_seq[32];
 
