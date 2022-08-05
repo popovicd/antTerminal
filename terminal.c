@@ -60,3 +60,106 @@ int terminal_enable_raw() {
     return 0;
 }
 
+int terminal_get_row() {
+    char buf[32];
+    int i = 0, row = 0;
+
+    if(write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
+        terminal_error(WRITE);
+
+    while (i < sizeof(buf) - 1) {
+        if(read(STDIN_FILENO, buf + i, 1) != 1) {
+			terminal_error(READ);
+		}
+        if (buf[i] == 'R')
+            break;
+        i++;
+    }
+    buf[i] = '\0';
+
+    sscanf(buf + 2, "%i", &row);
+
+    return row;
+}
+
+int terminal_cursor_move(int pos) {
+    int row;
+    char control_seq[32];
+
+    row = terminal_get_row();
+    if(row < 0)
+        terminal_error(-1); /* default error case */
+
+    snprintf(control_seq, sizeof(control_seq), "\x1b[%d;%dH", row, pos);
+
+    if(write(STDOUT_FILENO, control_seq, strlen(control_seq)) != strlen(control_seq))
+        terminal_error(WRITE);
+}
+
+int terminal_key_process() {
+    int nread;
+    char c;
+
+    while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
+        if (nread == -1 && errno != EAGAIN)
+            terminal_error(READ);
+    }
+
+    if (c == '\x1b') {
+        char seq[3];
+
+        if (read(STDIN_FILENO, &seq[0], 1) != 1)
+			return '\x1b';
+        if (read(STDIN_FILENO, &seq[1], 1) != 1)
+			return '\x1b';
+
+        if (seq[0] == '[') {
+            switch (seq[1]) {
+                case 'A':
+                    return ARROW_UP;
+                case 'B':
+                    return ARROW_DOWN;
+                case 'C':
+                    return ARROW_RIGHT;
+                case 'D':
+                    return ARROW_LEFT;
+            }
+        }
+        return '\x1b';
+    }
+    else {
+        return c;
+    }
+}
+
+int terminal_getchar() {
+    int c;
+
+    c = terminal_key_process();
+
+    switch (c) {
+        case CTRL_KEY('q'):                 /* quit */
+            break;
+        case CTRL_KEY('a'):                 /* home */
+            break;
+        case CTRL_KEY('e'):                 /* end */
+            break;
+        case ENTER:
+            break;
+        case ARROW_UP:
+            break;
+        case ARROW_DOWN:
+            break;
+        case ARROW_LEFT:
+            break;
+        case ARROW_RIGHT:
+            break;
+        case BACKSPACE:
+            break;
+		default: 							/* any other char */
+
+            break;
+    }
+
+    return c;
+}
