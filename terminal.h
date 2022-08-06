@@ -12,7 +12,7 @@
 #define CTRL_KEY(k) ((k) & 0x1f)
 
 #define LEN_LINE    80
-#define PROMPT      "gterm > "
+#define PROMPT      "term > "
 #define LEN_PROMPT  strlen(PROMPT) + 1
 
 struct terminal_context {
@@ -32,11 +32,12 @@ enum error {
 void terminal_enable_raw();
 void terminal_disable_raw();
 void terminal_refresh();
-void terminal_init(struct terminal_context *terminal);
+void terminal_init();
 void terminal_error(int error);
 
 void terminal_prompt(char *prompt);
 void terminal_cursor_move(int pos);
+void terminal_getline(char *line);
 int terminal_getchar();
 int terminal_key_process();
 int terminal_get_row();

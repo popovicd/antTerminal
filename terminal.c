@@ -71,10 +71,10 @@ void terminal_refresh() {
 }
 
 void terminal_init(struct terminal_context *terminal) {
-    memset(terminal->buffer, 0, LEN_LINE);
-    terminal->line_pos = LEN_PROMPT;
-    terminal->str_len = 0;
-    terminal->str_pos = LEN_PROMPT;
+    memset(t_ctx.buffer, 0, LEN_LINE);
+    t_ctx.line_pos = LEN_PROMPT;
+    t_ctx.str_len = 0;
+    t_ctx.str_pos = 0;
 
     terminal_enable_raw();
 }
@@ -200,11 +200,7 @@ int terminal_getchar() {
             break;
         case ENTER:
 			t_ctx.buffer[t_ctx.str_len + 1] = '\0';
-			if (t_ctx.str_len > 0) {
-				memset(t_ctx.buffer, '\0', LEN_LINE);
-				t_ctx.line_pos = LEN_PROMPT;
-				t_ctx.str_len = 0;
-			}
+
 
 			if(write(STDOUT_FILENO, "\r\n", 2) != 2)
 				terminal_error(WRITE);
@@ -277,7 +273,7 @@ int terminal_getchar() {
 			for (i = t_ctx.line_pos; i < line_length - 1; i++) {
 				curr_pos = line_length - 1 - i;
 				if(write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len - curr_pos], 1) != 1)
-				terminal_error(WRITE);
+					terminal_error(WRITE);
 			}
 			t_ctx.buffer[t_ctx.str_len] = ' ';
 
@@ -325,9 +321,97 @@ int terminal_getchar() {
 				if(write(STDOUT_FILENO, &c, 1) != 1)
 					terminal_error(WRITE);
 			}
-
             break;
     }
 
     return c;
+}
+
+void terminal_getline(char *line) {
+	int i, j, c, flag;
+
+	i = 0;
+	flag = 0;
+
+	memset(line, 0, LEN_LINE);
+
+	while(1) {
+		c = terminal_getchar();
+
+		switch(c) {
+			case '\n':
+				line[t_ctx.str_len + 1] = '\0';
+				/* reset intergnals for terminal context */
+				if (t_ctx.str_len > 0) {
+					memset(t_ctx.buffer, '\0', LEN_LINE);
+					t_ctx.line_pos = LEN_PROMPT;
+					t_ctx.str_pos = 0;
+					t_ctx.str_len = 0;
+				}
+				/* bail out */
+				return;
+			case ARROW_UP:
+			case ARROW_DOWN:
+			case ARROW_RIGHT:
+			case ARROW_LEFT:
+				break;
+			case EOL:
+				continue;
+			case BACKSPACE:
+				/* on the begging of a line buffer, but backspace was
+				 * already pressed. Ignore, nothing to do here.*/
+				if(t_ctx.str_pos == 0 && flag == 1) {
+					flag = 1;
+					break;
+				}
+
+				/* on the begging of a line buffer, but backspace was
+				 * not already pressed */
+				if(t_ctx.str_pos == 0) {
+					for (j = t_ctx.str_pos; j < t_ctx.str_len; j++) {
+					    line[j] = line[j + 1];
+					}
+					line[j] = '\0';
+					flag = 1;
+					break;
+				}
+
+				/* at the end of a line buffer, delete the last char in
+				 * the buffer */
+				if(t_ctx.str_pos == t_ctx.str_len) {
+					line[t_ctx.str_pos] = '\0';
+					break;
+				}
+
+				/* somwhere in the middle of a string buffer. Copy everything
+				 * after the current position from the the current postion
+				 * till the end */
+				for (j = t_ctx.str_pos; j < t_ctx.str_len; j++) {
+					line[j] = line[j + 1];
+				}
+				line[j] = '\0';
+				flag = 0;
+
+				break;
+			default:
+				/* end of the string, just append*/
+				if(t_ctx.str_pos == t_ctx.str_len) {
+				    line[i] = c;
+					break;
+				}
+				/* in the middle of a string, move everything from the
+				 * current position one place up. Place a new char in the
+				 * current posting. */
+				else {
+					for(j = t_ctx.str_len + 1; j >= t_ctx.str_pos; j--) {
+						line[j] = line[j - 1];
+					}
+					line[t_ctx.str_pos - 1] = c;
+					line[t_ctx.str_len + 1] = '\0';
+				}
+
+				break;
+		}
+		i++;
+	}
 }
