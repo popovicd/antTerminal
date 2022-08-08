@@ -19,14 +19,9 @@ void shell_getline(char *line) {
 	while(1) {
 		terminal_prompt(PROMPT);
 		terminal_getline(line);
-		i = 0;
-		while(1) {
-			write(STDOUT_FILENO, &line[i], 1);
-			if(line[i] == '\0')
- 			   break;
-			i++;
-		}
 
-		write(STDOUT_FILENO, "\r\n", 2);
+		terminal_putstring(line, strlen(line));
+
+		terminal_putstring("\r\n", 2);
 	}
 }
