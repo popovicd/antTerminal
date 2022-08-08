@@ -26,9 +26,9 @@ int shell_getline(char *line) {
 	terminal_prompt(PROMPT);
 	rval = terminal_getline(line);
 
-	terminal_putstring(line, strlen(line));
+	terminal_putstring(line);
 
-	terminal_putstring("\r\n", 2);
+	terminal_putstring("\r\n");
 
 	return rval;
 }
