@@ -38,6 +38,8 @@ void terminal_error(int error);
 void terminal_prompt(char *prompt);
 void terminal_cursor_move(int pos);
 void terminal_getline(char *line);
+void terminal_putchar(char c);
+void terminal_putstring(char *c, int len);
 int terminal_getchar();
 int terminal_key_process();
 int terminal_get_row();

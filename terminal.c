@@ -415,3 +415,20 @@ void terminal_getline(char *line) {
 		i++;
 	}
 }
+
+void terminal_putchar(char c) {
+	if(write(STDOUT_FILENO, &c, 1) != 1)
+		terminal_error(WRITE);
+}
+
+void terminal_putstring(char *c, int len) {
+	int i;
+
+	i = 0;
+	while(1) {
+		terminal_putchar(c[i]);
+		if(i == len)
+			break;
+		i++;
+	}
+}
