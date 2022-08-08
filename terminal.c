@@ -431,14 +431,12 @@ void terminal_putchar(char c) {
 		terminal_error(ERR_WRITE);
 }
 
-void terminal_putstring(char *c, int len) {
+void terminal_putstring(char *c) {
 	int i;
 
 	i = 0;
-	while(1) {
+	while(c[i] != '\0') {
 		terminal_putchar(c[i]);
-		if(i == len)
-			break;
 		i++;
 	}
 }

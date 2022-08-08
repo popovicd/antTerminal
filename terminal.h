@@ -75,7 +75,7 @@ void terminal_error(int error);
 void terminal_prompt(char *prompt);
 void terminal_cursor_move(int pos);
 void terminal_putchar(char c);
-void terminal_putstring(char *c, int len);
+void terminal_putstring(char *c);
 int terminal_getline(char *line);
 int terminal_getchar();
 int terminal_key_process();
