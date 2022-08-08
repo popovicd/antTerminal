@@ -255,16 +255,12 @@ int terminal_getchar() {
 				t_ctx.buffer[t_ctx.str_len - curr_pos] = t_ctx.buffer[t_ctx.str_len - curr_pos + 1];
 			}
 
-			/* erase the last char if backspace presed on the last */
-			t_ctx.buffer[t_ctx.str_len] = ' ';
-
 			terminal_cursor_move(t_ctx.line_pos);
 			if(write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len], 1) != 1)
 				terminal_error(ERR_WRITE);
 			terminal_cursor_move(t_ctx.line_pos);
 
 			t_ctx.str_len--;
-
 			/* move everything one char downfront if cursor is in the middle
 			 * of a t_ctx.buffer string. Afterwards, delete trailing crap
 			 */
@@ -273,6 +269,8 @@ int terminal_getchar() {
 				if(write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len - curr_pos], 1) != 1)
 					terminal_error(ERR_WRITE);
 			}
+
+			/* erase the last char if backspace presed on the last */
 			t_ctx.buffer[t_ctx.str_len] = ' ';
 
 			if(write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len], 1) != 1)
@@ -319,6 +317,7 @@ int terminal_getchar() {
 				if(write(STDOUT_FILENO, &c, 1) != 1)
 					terminal_error(ERR_WRITE);
 			}
+
             break;
     }
 
@@ -360,6 +359,12 @@ int terminal_getline(char *line) {
 			case EOL:
 				continue;
 			case BACKSPACE:
+				/* fix the **line** counter here. When backspace is pressd
+				 * we not only need to trace the cursos positions on the screen
+				 * but also the index in the line buffer as well. This will have
+				 * effect when adding a new char to the EOL after BS was pressed */
+				i = i - 2;
+
 				/* on the begging of a line buffer, but backspace was
 				 * already pressed. Ignore, nothing to do here.*/
 				if(t_ctx.str_pos == 0 && flag == 1) {
@@ -381,7 +386,7 @@ int terminal_getline(char *line) {
 				/* at the end of a line buffer, delete the last char in
 				 * the buffer */
 				if(t_ctx.str_pos == t_ctx.str_len) {
-					line[t_ctx.str_pos] = '\0';
+					line[t_ctx.str_len] = '\0';
 					break;
 				}
 
@@ -401,6 +406,7 @@ int terminal_getline(char *line) {
 				    line[i] = c;
 					break;
 				}
+
 				/* in the middle of a string, move everything from the
 				 * current position one place up. Place a new char in the
 				 * current posting. */
