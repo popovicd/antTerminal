@@ -187,8 +187,9 @@ int terminal_getchar() {
         case CTRL_KEY('n'):
 			break;
         case CTRL_KEY('q'):                 /* quit */
-			terminal_refresh();
-            break;
+            terminal_refresh();
+			exit(0);
+			break;
         case CTRL_KEY('a'):                 /* home */
 			t_ctx.line_pos = LEN_PROMPT;
 			terminal_cursor_move(t_ctx.line_pos);
