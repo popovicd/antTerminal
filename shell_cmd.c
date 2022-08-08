@@ -9,7 +9,7 @@
 int shell_cmd_ex_one(char **argv, int argc) {
 	int i;
 
-	terminal_putstring("\r\nThe following command was input:\r\n\r\n");
+	terminal_putstring("\r\nThe following was input:\r\n\r\n");
 
 	terminal_putstring("Command:\r\n\t");
 	terminal_putstring(argv[0]);
@@ -29,7 +29,7 @@ int shell_cmd_ex_one(char **argv, int argc) {
 int shell_cmd_ex_two(char **argv, int argc) {
 	int i;
 
-	terminal_putstring("\r\nThe following command was input:\r\n\r\n");
+	terminal_putstring("\r\nThe following was input:\r\n\r\n");
 
 	terminal_putstring("Command:\r\n\t");
 	terminal_putstring(argv[0]);
@@ -48,7 +48,7 @@ int shell_cmd_ex_two(char **argv, int argc) {
 int shell_cmd_ex_three(char **argv, int argc) {
 	int i;
 
-	terminal_putstring("\r\nThe following command was input:\r\n\r\n");
+	terminal_putstring("\r\nThe following was input:\r\n\r\n");
 
 	terminal_putstring("Command:\r\n\t");
 	terminal_putstring(argv[0]);
