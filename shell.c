@@ -1,11 +1,5 @@
-#include <ctype.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <sys/ioctl.h>
-#include <termios.h>
-#include <unistd.h>
 
 #include "terminal.h"
 #include "shell.h"
@@ -20,9 +14,9 @@ char *shell_commands[] = {
 };
 
 int (*command_functions[]) (char **argv, int argc) = {
-	&shell_cmd_ex_one,
-	&shell_cmd_ex_two,
-	&shell_cmd_ex_three
+//	&shell_cmd_ex_one,
+//	&shell_cmd_ex_two,
+//	&shell_cmd_ex_three
 };
 
 int shell_getline(char *line) {
