@@ -12,4 +12,9 @@ enum shell_status {
 int shell_getline(char *line);
 int shell_parseline(char ***argv, int *argc, char *line);
 
+int shell_executecmd(char **argv, int argc);
+int shell_cmd_ex_one(char **argv, int argc);
+int shell_cmd_ex_two(char **argv, int argc);
+int shell_cmd_ex_three(char **argv, int argc);
+
 #endif /* __SHELL_H__ */
