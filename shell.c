@@ -7,48 +7,48 @@
 extern struct terminal_context t_ctx;
 
 char *shell_commands[] = {
-	"cmd-example-1",
-	"cmd-example-2",
-	"cmd-example-3",
-	"cmd-exit"
+    "cmd-example-1",
+    "cmd-example-2",
+    "cmd-example-3",
+    "cmd-exit"
 };
 
 int (*command_functions[]) (char **argv, int argc) = {
-	&shell_cmd_ex_one,
-	&shell_cmd_ex_two,
-	&shell_cmd_ex_three
+    &shell_cmd_ex_one,
+    &shell_cmd_ex_two,
+    &shell_cmd_ex_three
 };
 
 int shell_getline(char *line) {
-	int rval, i;
-	terminal_init();
+    int rval, i;
+    terminal_init();
 
-	terminal_prompt(PROMPT);
+    terminal_prompt(PROMPT);
 
-	rval = terminal_getline(line);
-	if(rval = KEY_NEWLINE && (strcmp(line, "") == 0))
-		return KEY_NEWLINE;
+    rval = terminal_getline(line);
+    if(rval = KEY_NEWLINE && (strcmp(line, "") == 0))
+        return KEY_NEWLINE;
 
-	/* Echos the line */
-	/* terminal_putstring(line); */
-	/* terminal_putstring("\r\n"); */
+    /* Echos the line */
+    /* terminal_putstring(line); */
+    /* terminal_putstring("\r\n"); */
 
-	return SHELL_OK;
+    return SHELL_OK;
 }
 
 int shell_parseline(char ***argv, int *argc, char *line) {
     char *token;
     int argument_count;
 
-	(*argv) = malloc(sizeof(char *) * MAX_ARGV);
+    (*argv) = malloc(sizeof(char *) * MAX_ARGV);
     if((*argv) == NULL) {
         return SHELL_NO_MEMORY;
     }
 
     for(argument_count = 0, token = strtok(line, " "); token ;
-		token = strtok(0, " "), argument_count++) {
+        token = strtok(0, " "), argument_count++) {
 
- 	   	(*argv)[argument_count] = malloc(sizeof(char) * strlen(token) + 1);
+        (*argv)[argument_count] = malloc(sizeof(char) * strlen(token) + 1);
         if((*argv)[argument_count] == NULL) {
             return SHELL_NO_MEMORY;
         }
@@ -60,7 +60,7 @@ int shell_parseline(char ***argv, int *argc, char *line) {
 }
 
 int shell_executecmd(char **argv, int argc) {
-	int rval, i;
+    int rval, i;
 
     for (i = 0; i < sizeof(shell_commands) / sizeof(char *); i++) {
         if (strcmp(argv[0], shell_commands[i]) == 0) {

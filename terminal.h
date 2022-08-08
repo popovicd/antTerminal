@@ -7,7 +7,7 @@
 #define ARROW_DOWN  1001
 #define ARROW_LEFT  1002
 #define ARROW_RIGHT 1003
-#define EOL 		1005
+#define EOL         1005
 
 #define CTRL_KEY(k) ((k) & 0x1f)
 
@@ -16,54 +16,54 @@
 #define LEN_PROMPT  strlen(PROMPT) + 1
 
 struct terminal_context {
-	char buffer[LEN_LINE];
-	int str_len;
-	int str_pos;
-	int line_pos;
+    char buffer[LEN_LINE];
+    int str_len;
+    int str_pos;
+    int line_pos;
 };
 
 enum terminal_rval {
-	TERMINAL_OK = 0,
-	/* used */
-	CTRL_Q,
-	/* unused */
-	CTRL_R,
-	CTRL_T,
-	CTRL_Y,
-	CTRL_U,
-	CTRL_O,
-	CTRL_P,
-	CTRL_A,
-	CTRL_S,
-	CTRL_D,
-	CTRL_F,
-	CTRL_G,
-	CTRL_H,
-	CTRL_J,
-	CTRL_K,
-	CTRL_L,
-	CTRL_Z,
-	CTRL_X,
-	CTRL_C,
-	CTRL_V,
-	CTRL_B,
-	CTRL_N,
-	CTRL_M,
-	/* unused */
-	KEY_NEWLINE,
-	/* used */
-	KEY_ARROW_UP,
-	KEY_ARROW_DOWN,
-	/* unused */
-	KEY_ARROW_LEFT,
-	KET_ARROW_RIGHT,
+    TERMINAL_OK = 0,
+    /* used */
+    CTRL_Q,
+    /* unused */
+    CTRL_R,
+    CTRL_T,
+    CTRL_Y,
+    CTRL_U,
+    CTRL_O,
+    CTRL_P,
+    CTRL_A,
+    CTRL_S,
+    CTRL_D,
+    CTRL_F,
+    CTRL_G,
+    CTRL_H,
+    CTRL_J,
+    CTRL_K,
+    CTRL_L,
+    CTRL_Z,
+    CTRL_X,
+    CTRL_C,
+    CTRL_V,
+    CTRL_B,
+    CTRL_N,
+    CTRL_M,
+    /* unused */
+    KEY_NEWLINE,
+    /* used */
+    KEY_ARROW_UP,
+    KEY_ARROW_DOWN,
+    /* unused */
+    KEY_ARROW_LEFT,
+    KET_ARROW_RIGHT,
 };
 
 enum error {
-	ERR_TCSETATTR = 0,
-	ERR_TCGETATTR,
-	ERR_READ,
-	ERR_WRITE,
+    ERR_TCSETATTR = 0,
+    ERR_TCGETATTR,
+    ERR_READ,
+    ERR_WRITE,
 };
 
 void terminal_enable_raw();

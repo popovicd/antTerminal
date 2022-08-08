@@ -1,7 +1,7 @@
 #ifndef __SHELL_H__
 #define __SHELL_H__
 
-#define MAX_ARGV 	5
+#define MAX_ARGV    5
 
 enum shell_status {
     SHELL_OK = 0,
