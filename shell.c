@@ -24,20 +24,23 @@ int shell_getline(char *line) {
 	terminal_init();
 
 	terminal_prompt(PROMPT);
+
 	rval = terminal_getline(line);
+	if(rval = KEY_NEWLINE && (strcmp(line, "") == 0))
+		return KEY_NEWLINE;
 
-	terminal_putstring(line);
+	/* Echos the line */
+	/* terminal_putstring(line); */
+	/* terminal_putstring("\r\n"); */
 
-	terminal_putstring("\r\n");
-
-	return rval;
+	return SHELL_OK;
 }
 
 int shell_parseline(char ***argv, int *argc, char *line) {
     char *token;
     int argument_count;
 
-    (*argv) = malloc(sizeof(char *) * MAX_ARGV);
+	(*argv) = malloc(sizeof(char *) * MAX_ARGV);
     if((*argv) == NULL) {
         return SHELL_NO_MEMORY;
     }
