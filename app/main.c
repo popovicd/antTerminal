@@ -1,10 +1,5 @@
-#include <stdlib.h>
-#include <string.h>
-
 #include "shell.h"
 #include "terminal.h"
-
-extern struct terminal_context t_ctx;
 
 int main(void)
 {
@@ -14,9 +9,10 @@ int main(void)
     char **argv;
     char   line[LEN_LINE] = { 0 };
 
+    shell_init();
+
     while (1)
     {
-        terminal_prompt(PROMPT);
         rval = shell_getline(line);
 
         if (rval == SHELL_ARROW)
@@ -30,7 +26,11 @@ int main(void)
             continue;
         }
 
-        shell_parseline(&argv, &argc, line);
+        rval = shell_parseline(&argv, &argc, line);
+        if (rval == SHELL_TOO_MANY_ARGS)
+        {
+            terminal_putstring("Too many args, accepting command + 4 args max\r\n");
+        }
 
         rval = shell_executecmd(argv, argc);
         if (rval == SHELL_COMMAND_NOT_FOUND)
@@ -46,7 +46,7 @@ int main(void)
 
         if (rval == SHELL_EXIT)
         {
-            break;
+            exit(0);
         }
     }
 
