@@ -34,10 +34,10 @@ int shell_parseline(char ***argv, int *argc, char *line)
 {
     int rval = SHELL_OK;
 
-    int   argument_count;
+    int   argument_count = 1;
     char *token;
 
-    (*argv) = malloc(sizeof(char *) * MAX_ARGC);
+    (*argv) = calloc(MAX_ARGC, sizeof(char *));
     if ((*argv) == NULL)
     {
         rval = SHELL_NO_MEMORY;
@@ -51,7 +51,6 @@ int shell_parseline(char ***argv, int *argc, char *line)
             rval = SHELL_TOO_MANY_ARGS;
             goto end;
         }
-
         (*argv)[argument_count] = malloc(sizeof(char) * strlen(token) + 1);
         if ((*argv)[argument_count] == NULL)
         {
@@ -61,9 +60,8 @@ int shell_parseline(char ***argv, int *argc, char *line)
         strcpy((*argv)[argument_count], token);
     }
 
-    *argc = argument_count;
-
 end:
+    *argc = argument_count;
     return rval;
 }
 
