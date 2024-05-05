@@ -1,15 +1,5 @@
-#include <ctype.h>
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/ioctl.h>
-#include <termios.h>
-#include <unistd.h>
-
 #include "terminal.h"
 
-struct termios          orig_termios;
 struct terminal_context t_ctx;
 
 void terminal_error(int error)
@@ -17,56 +7,20 @@ void terminal_error(int error)
     switch (error)
     {
         case ERR_TCSETATTR:
-            perror("Error at setting terminal attributes: ");
+            perror("Error at setting terminal attributes.");
             exit(1);
         case ERR_TCGETATTR:
-            perror("Error at getting terminal attributes: ");
+            perror("Error at getting terminal attributes.");
             exit(1);
         case ERR_READ:
-            perror("Terminal read error: ");
+            perror("Terminal read error.");
             exit(1);
         case ERR_WRITE:
-            perror("Terminal write error: ");
+            perror("Terminal write error.");
             exit(1);
-        deafult:
+        default:
             exit(1);
     }
-}
-
-void terminal_disable_raw()
-{
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios);
-}
-
-void terminal_enable_raw()
-{
-    if (tcgetattr(STDIN_FILENO, &orig_termios) == -1) terminal_error(ERR_TCGETATTR);
-
-    /* Set the new attributes for the terminal */
-    struct termios raw_terminal;
-
-    raw_terminal = orig_termios;
-
-    raw_terminal.c_iflag &= ~(ICRNL | IXON);
-    raw_terminal.c_oflag &= ~(OPOST);
-    raw_terminal.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
-    raw_terminal.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
-    raw_terminal.c_cflag |= (CS8);
-    raw_terminal.c_cc[VMIN]  = 0;
-    raw_terminal.c_cc[VTIME] = 1;
-
-    /* on exit, restore the original terminal */
-    atexit(terminal_disable_raw);
-
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_terminal) == -1) terminal_error(ERR_TCGETATTR);
-}
-
-void terminal_refresh()
-{
-    if (write(STDOUT_FILENO, "\x1b[?25l", 6) != 6) terminal_error(ERR_WRITE);
-    if (write(STDOUT_FILENO, "\x1b[2J", 4) != 4) terminal_error(ERR_WRITE);
-    if (write(STDOUT_FILENO, "\x1b[H", 3) != 3) terminal_error(ERR_WRITE);
-    if (write(STDOUT_FILENO, "\x1b[?25h", 6) != 6) terminal_error(ERR_WRITE);
 }
 
 void terminal_init()
@@ -79,12 +33,72 @@ void terminal_init()
     terminal_enable_raw();
 }
 
+void terminal_enable_raw()
+{
+    /* save original terminal settinggs */
+    if (tcgetattr(STDIN_FILENO, &t_ctx.orig_termios) == -1)
+    {
+        terminal_error(ERR_TCGETATTR);
+    }
+
+    /* on exit, restore the original terminal */
+    atexit(terminal_disable_raw);
+
+    /* set new terminal settings based on the old terminal settings */
+    struct termios raw_terminal;
+    memcpy(&raw_terminal, &t_ctx.orig_termios, sizeof(struct termios));
+
+    raw_terminal.c_iflag &= ~(ICRNL | IXON);
+    raw_terminal.c_oflag &= ~(OPOST);
+    raw_terminal.c_lflag &= ~(ECHO | ICANON | IEXTEN | ISIG);
+    raw_terminal.c_iflag &= ~(BRKINT | ICRNL | INPCK | ISTRIP | IXON);
+    raw_terminal.c_cflag |= (CS8);
+    raw_terminal.c_cc[VMIN]  = 0;
+    raw_terminal.c_cc[VTIME] = 1;
+
+    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_terminal) == -1)
+    {
+        terminal_error(ERR_TCGETATTR);
+    }
+}
+
+void terminal_disable_raw()
+{
+    if (tcsetattr(STDIN_FILENO, TCSANOW, &t_ctx.orig_termios) == -1)
+    {
+        terminal_error(ERR_TCSETATTR);
+    }
+}
+
+void terminal_refresh()
+{
+    if (write(STDOUT_FILENO, "\x1b[?25l", 6) != 6)
+    {
+        terminal_error(ERR_WRITE);
+    }
+    if (write(STDOUT_FILENO, "\x1b[2J", 4) != 4)
+    {
+        terminal_error(ERR_WRITE);
+    }
+    if (write(STDOUT_FILENO, "\x1b[H", 3) != 3)
+    {
+        terminal_error(ERR_WRITE);
+    }
+    if (write(STDOUT_FILENO, "\x1b[?25h", 6) != 6)
+    {
+        terminal_error(ERR_WRITE);
+    }
+}
+
 int terminal_get_row()
 {
     char buf[32];
     int  i = 0, row = 0;
 
-    if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4) terminal_error(ERR_WRITE);
+    if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4)
+    {
+        terminal_error(ERR_WRITE);
+    }
 
     while (i < sizeof(buf) - 1)
     {
@@ -108,16 +122,25 @@ void terminal_cursor_move(int pos)
     char control_seq[32];
 
     row = terminal_get_row();
-    if (row < 0) terminal_error(-1); /* default error case */
+    if (row < 0)
+    {
+        terminal_error(-1); /* default error case */
+    }
 
     snprintf(control_seq, sizeof(control_seq), "\x1b[%d;%dH", row, pos);
 
-    if (write(STDOUT_FILENO, control_seq, strlen(control_seq)) != strlen(control_seq)) terminal_error(ERR_WRITE);
+    if (write(STDOUT_FILENO, control_seq, strlen(control_seq)) != strlen(control_seq))
+    {
+        terminal_error(ERR_WRITE);
+    }
 }
 
 void terminal_prompt(char *prompt)
 {
-    if (write(STDOUT_FILENO, prompt, strlen(prompt)) != strlen(prompt)) terminal_error(ERR_WRITE);
+    if (write(STDOUT_FILENO, prompt, strlen(prompt)) != strlen(prompt))
+    {
+        terminal_error(ERR_WRITE);
+    }
 }
 
 int terminal_key_process()
@@ -127,7 +150,10 @@ int terminal_key_process()
 
     while ((nread = read(STDIN_FILENO, &c, 1)) != 1)
     {
-        if (nread == -1 && errno != EAGAIN) terminal_error(ERR_READ);
+        if (nread == -1 && errno != EAGAIN)
+        {
+            terminal_error(ERR_READ);
+        }
     }
 
     if (c == '\x1b')
@@ -206,7 +232,10 @@ int terminal_getchar()
         case ENTER: {
             t_ctx.buffer[t_ctx.str_len + 1] = '\0';
 
-            if (write(STDOUT_FILENO, "\r\n", 2) != 2) terminal_error(ERR_WRITE);
+            if (write(STDOUT_FILENO, "\r\n", 2) != 2)
+            {
+                terminal_error(ERR_WRITE);
+            }
             c = '\n';
             break;
         }
@@ -271,7 +300,10 @@ int terminal_getchar()
             }
 
             terminal_cursor_move(t_ctx.line_pos);
-            if (write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len], 1) != 1) terminal_error(ERR_WRITE);
+            if (write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len], 1) != 1)
+            {
+                terminal_error(ERR_WRITE);
+            }
             terminal_cursor_move(t_ctx.line_pos);
 
             t_ctx.str_len--;
@@ -281,13 +313,19 @@ int terminal_getchar()
             for (i = t_ctx.line_pos; i < line_length - 1; i++)
             {
                 curr_pos = line_length - 1 - i;
-                if (write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len - curr_pos], 1) != 1) terminal_error(ERR_WRITE);
+                if (write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len - curr_pos], 1) != 1)
+                {
+                    terminal_error(ERR_WRITE);
+                }
             }
 
             /* erase the last char if backspace presed on the last */
             t_ctx.buffer[t_ctx.str_len] = ' ';
 
-            if (write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len], 1) != 1) terminal_error(ERR_WRITE);
+            if (write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len], 1) != 1)
+            {
+                terminal_error(ERR_WRITE);
+            }
             terminal_cursor_move(t_ctx.line_pos);
 
             break;
@@ -303,10 +341,10 @@ int terminal_getchar()
             /* somewhere in the middle of a t_ctx.buffer string */
             if (t_ctx.line_pos != LEN_PROMPT + t_ctx.str_len)
             {
-                int i, line_length, curr_pos;
+                int line_length, curr_pos;
 
                 line_length = LEN_PROMPT + t_ctx.str_len;
-                for (i = line_length + 1; i > t_ctx.line_pos; i--)
+                for (int i = line_length + 1; i > t_ctx.line_pos; i--)
                 {
                     curr_pos                                   = line_length + 1 - i;
                     t_ctx.buffer[t_ctx.str_len - curr_pos + 1] = t_ctx.buffer[t_ctx.str_len - curr_pos];
@@ -314,7 +352,7 @@ int terminal_getchar()
                 curr_pos                                   = line_length + 1 - t_ctx.line_pos;
                 t_ctx.buffer[t_ctx.str_len - curr_pos + 1] = c;
 
-                for (i = t_ctx.line_pos; i < line_length + 1; i++)
+                for (int i = t_ctx.line_pos; i < line_length + 1; i++)
                 {
                     curr_pos = line_length - i;
                     if (write(STDOUT_FILENO, &t_ctx.buffer[t_ctx.str_len - curr_pos], 1) != 1)
@@ -326,6 +364,7 @@ int terminal_getchar()
                 t_ctx.str_pos = t_ctx.line_pos - LEN_PROMPT - 2;
                 terminal_cursor_move(t_ctx.line_pos);
             }
+            /* at the end of a string */
             else
             {
                 t_ctx.buffer[t_ctx.str_len] = c;
@@ -333,7 +372,10 @@ int terminal_getchar()
                 t_ctx.str_len++;
                 t_ctx.line_pos++;
 
-                if (write(STDOUT_FILENO, &c, 1) != 1) terminal_error(ERR_WRITE);
+                if (write(STDOUT_FILENO, &c, 1) != 1)
+                {
+                    terminal_error(ERR_WRITE);
+                }
             }
 
             break;
@@ -462,7 +504,10 @@ int terminal_getline(char *line)
 
 void terminal_putchar(char c)
 {
-    if (write(STDOUT_FILENO, &c, 1) != 1) terminal_error(ERR_WRITE);
+    if (write(STDOUT_FILENO, &c, 1) != 1)
+    {
+        terminal_error(ERR_WRITE);
+    }
 }
 
 void terminal_putstring(char *c)

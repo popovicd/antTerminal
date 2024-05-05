@@ -1,6 +1,15 @@
 #ifndef __TERMINAL_H__
 #define __TERMINAL_H__
 
+#include <ctype.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <termios.h>
+#include <unistd.h>
+
 #define ENTER 13
 #define BACKSPACE 127
 #define ARROW_UP 1000
@@ -19,11 +28,15 @@
 
 struct terminal_context
 {
-    char buffer[LEN_LINE];
     int  str_len;
     int  str_pos;
     int  line_pos;
+    char buffer[LEN_LINE];
+
+    struct termios orig_termios;
 };
+
+extern struct terminal_context t_ctx;
 
 enum terminal_rval
 {
