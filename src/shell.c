@@ -1,6 +1,3 @@
-#include <stdlib.h>
-#include <string.h>
-
 #include "shell.h"
 #include "terminal.h"
 
@@ -10,12 +7,16 @@ char *shell_commands[] = { "ls", "cd", "pwd", "exit" };
 
 int (*command_functions[])(char **argv, int argc) = { &shell_cmd_ls, &shell_cmd_cd, &shell_cmd_pwd, &shell_cmd_exit };
 
+void shell_init()
+{
+    terminal_init();
+}
+
 int shell_getline(char *line)
 {
     int rval = SHELL_OK;
 
-    terminal_init();
-
+    terminal_prompt(PROMPT);
     rval = terminal_getline(line);
     if ((rval == KEY_NEWLINE) && (strcmp(line, "")) == 0)
     {
@@ -36,7 +37,7 @@ int shell_parseline(char ***argv, int *argc, char *line)
     int   argument_count;
     char *token;
 
-    (*argv) = malloc(sizeof(char *) * MAX_ARGV);
+    (*argv) = malloc(sizeof(char *) * MAX_ARGC);
     if ((*argv) == NULL)
     {
         rval = SHELL_NO_MEMORY;
@@ -45,6 +46,11 @@ int shell_parseline(char ***argv, int *argc, char *line)
 
     for (argument_count = 0, token = strtok(line, " "); token; token = strtok(0, " "), argument_count++)
     {
+        if (argument_count >= MAX_ARGC)
+        {
+            rval = SHELL_TOO_MANY_ARGS;
+            goto end;
+        }
 
         (*argv)[argument_count] = malloc(sizeof(char) * strlen(token) + 1);
         if ((*argv)[argument_count] == NULL)

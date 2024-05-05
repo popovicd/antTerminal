@@ -1,17 +1,23 @@
 #ifndef __SHELL_H__
 #define __SHELL_H__
 
-#define MAX_ARGV 5
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_ARGC 5
 
 enum shell_status
 {
     SHELL_OK                = 0,
     SHELL_NO_MEMORY         = -1,
-    SHELL_COMMAND_NOT_FOUND = -2,
-    SHELL_EXIT              = -3,
-    SHELL_NEWLINE           = -4,
-    SHELL_ARROW             = -5,
+    SHELL_TOO_MANY_ARGS     = -2,
+    SHELL_COMMAND_NOT_FOUND = -3,
+    SHELL_EXIT              = -4,
+    SHELL_NEWLINE           = -5,
+    SHELL_ARROW             = -6,
 };
+
+void shell_init();
 
 int shell_getline(char *line);
 int shell_parseline(char ***argv, int *argc, char *line);
